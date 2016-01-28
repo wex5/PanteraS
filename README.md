@@ -16,18 +16,18 @@ _"You shall ~~not~~ PaaS"_
 ## Architecture
 
 ### Components
-- Mesos + Marathon + ZooKeeper + Chronos (orchestration components)
+- Mesos + Marathon + ZooKeeper (orchestration components)
 - Consul (K/V store, monitoring, service directory and registry)  + Registrator (automating register/ deregister)
 - HAproxy + consul-template (load balancer with dynamic config generation)
 
-![PanteraS Architecture](http://s3.amazonaws.com/easel.ly/all_easels/19186/panteras/image.jpg#)
+![PanteraS Architecture](http://s3.amazonaws.com/easel.ly/all_easels/19186/panteras/image.jpg)
 
 
 ##### Master+Slave mode Container
 This is the default configuration. It will start all components inside a container.  
 It is recommended to run 3 or 5 master containers to ensure high availability of the PasteraS cluster.
 
-![Master Mode](http://s3.amazonaws.com/easel.ly/all_easels/19186/MasterMode/image.jpg#)
+![Master Mode](http://s3.amazonaws.com/easel.ly/all_easels/19186/MasterMode/image.jpg)
 
 ##### Only Slave mode Container
 Slave mode is enabled by `MASTER=false`  
@@ -53,22 +53,57 @@ Depending on `MASTER` and `SLAVE` you can define role of the container
     Mesos Master| x | x | - |
     Marathon    | x | x | - |
     Zookeeper   | x | x | - |
-    Chronos     | x | x | - |
  Consul-template| x | - | x |
     Haproxy     | x | - | x |
     Mesos Slave | x | - | x |
      Registrator| x | - | x |
          dnsmasq| x | x | x |
         
-
-## Requirements:
-- docker >= 1.9.1
-- docker-compose >= 1.5.1
-
-## Usage:
-Clone it
+## Preparation
+Version info：  
 ```
-git clone https://github.com/eBayClassifiedsGroup/PanteraS.git
+Linux-OS:         CENTOS  7.1
+Docker-engine:    1.9.1
+Docker-compose:   1.5.2
+```
+Close selinux
+```
+sed -i 's/^SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
+systemctl disable firewalld.service
+```
+Clean Iptables
+```
+iptables -F
+```
+## Usage:
+Install docker-engine
+```
+tee /etc/yum.repos.d/docker.repo <<-'EOF'
+[dockerrepo]
+name=Docker Repository
+baseurl=https://yum.dockerproject.org/repo/main/centos/$releasever/
+enabled=1
+gpgcheck=1
+gpgkey=https://yum.dockerproject.org/gpg
+EOF
+```
+install by yum
+```
+yum install docker-engine
+service docker start
+chkconfig docker on
+```
+Install docker-compose
+```
+curl -L https://github.com/docker/compose/releases/download/1.5.2/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
+```
+Apply executable permissions to the binary
+```
+chmod +x /usr/local/bin/docker-compose
+```
+Clone the PanteraS
+```
+git clone https://github.com/VFT/PanteraS.git
 cd PanteraS
 ```
 #### Default: Stand alone mode
@@ -81,42 +116,68 @@ or
 # IP=<DOCKER_HOST_IP> ./generate_yml.sh
 # docker-compose up -d
 ```
-
+#### Params of restricted/host
+```
+ZOOKEEPER_HOSTS            -- Zookeeper node's ip and port,use comma to separating
+CONSUL_HOSTS               -- Param '-join' for all consul server,use blank space to separating 
+MESOS_MASTER_QUORUM        -- Zookeeper 'quorum',value is master_total_count/2+1
+ZOOKEEPER_ID               -- Number of zookeeper server,such as 1,2,3...etc
+IP                         -- IP of this node
+HOSTNAME                   -- Hostname of this node,if you don't config hosts,use IP
+CONSUL_DOMAIN(Optional)		-- Consul Domain used by dnsmasq
+MESOS_SLAVE_PARAMS(Optional)-- Mesos-slave params used by startup
+KEEPALIVED_VIP(Optional)   -- VIP for keepalived
+MASTER=false(Optional)     -- If slave only
+SLAVE=false(Optional)      -- If master only
+```  
+One example of Master and Slave nodes
+```
+ZOOKEEPER_HOSTS="192.168.2.81:2181,192.168.2.82:2181,192.168.2.83:2181"
+CONSUL_HOSTS="-join=192.168.2.81 -join=192.168.2.82 -join=192.168.2.83"
+MESOS_MASTER_QUORUM=2
+ZOOKEEPER_ID=2
+IP=192.168.2.82
+HOSTNAME=192.168.2.82
+CONSUL_DOMAIN=cloudnil.com
+MESOS_SLAVE_PARAMS="--attributes=type:data --docker_remove_delay=1mins"
+KEEPALIVED_VIP=50.0.0.101
+```
+> Remarks:`--docker_remove_delay` is configed for the time before the docker-engine removed the existed container
 
 #### 3 Masters + N slaves:
-
-Configure zookeeper and consul:
+A simple configuration example:  
+1.Configure zookeeper and consul:
 ```
 everyhost# mkdir restricted
-everyhost# echo 'ZOOKEEPER_HOSTS="masterhost-1:2181,masterhost-2:2181,masterhost-3:2181"' >> restricted/host
-everyhost# echo 'CONSUL_HOSTS="-join=masterhost-1 -join=masterhost-2 -join=masterhost-3"' >> restricted/host
+everyhost# echo 'ZOOKEEPER_HOSTS="masterhost-1-ip:2181,masterhost-2-ip:2181,masterhost-3-ip:2181"' >> restricted/host
+everyhost# echo 'CONSUL_HOSTS="-join=masterhost-1-ip -join=masterhost-2-ip -join=masterhost-3-ip"' >> restricted/host
 everyhost# echo 'MESOS_MASTER_QUORUM=2' >> restricted/host
 ```
-Lets set only masterhost-1 to bootstrap the consul
+2.Lets set only masterhost-1 to bootstrap the consul,after every nodes is startup,remove `CONSUL_PARAMS="-bootstrap-expect 3` and recreate container
 ``` 
 masterhost-1# echo 'CONSUL_PARAMS="-bootstrap-expect 3"' >> restricted/host
 masterhost-1# echo 'ZOOKEEPER_ID=1' >> restricted/host
 masterhost-2# echo 'ZOOKEEPER_ID=2' >> restricted/host
 masterhost-3# echo 'ZOOKEEPER_ID=3' >> restricted/host
 ```    
-Optionally, if you have multiple IPs,
-set an IP address of docker host (do not use docker0 interface IP)  
-if you don't set it - it will try to guess `dig +short ${HOSTNAME}`
+3.Set an IP address of docker host (do not use docker0 interface IP)
 ``` 
-masterhost-1# echo 'IP=x.x.x.1' >> restricted/host
-masterhost-2# echo 'IP=x.x.x.2' >> restricted/host
-masterhost-3# echo 'IP=x.x.x.3' >> restricted/host
+everyhost# echo 'IP=everyhost-ip' >> restricted/host
 ```    
-
+4.if the hostname can't be resolved
+```
+everyhost# echo 'HOSTNAME=everyhost-ip' >> restricted/host
+```
 ##### Start containers:
 ```
-masterhost-n# ./generate_yml.sh
+masterhost-n# SLAVE=false ./generate_yml.sh
 masterhost-n# docker-compose up -d
 ```
 ```
 slavehost-n# MASTER=false ./generate_yml.sh
 slavehost-n# docker-compose up -d
 ```
+> Remark:`SLAVE=false` and `MASTER=false` can be add to `restricted/host` or specifyed when run `generate_yml.sh`
 
 ## Web Interfaces
 
@@ -125,19 +186,9 @@ on the following ports:
 
 - HAproxy: http://hostname:81
 - Consul: http://hostname:8500
-- Chronos: http://hostname:4400
 - Marathon: http://hostname:8080
 - Mesos: http://hostname:5050
 - Supervisord: http://hostname:9000
-
-## Listening address
-
-All PaaS components listen default on all interfaces (to all addresses: `0.0.0.0`),  
-which might be dangerous if you want to expose the PaaS.  
-Use ENV `LISTEN_IP` if you want to listen on specific IP address.  
-for example:  
-`echo LISTEN_IP=192.168.10.10 >> restricted/host`  
-This might not work for all services like Marathon or Chronos that has some additional random ports.
 
 ## Services Accessibility
 

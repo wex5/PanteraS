@@ -7,12 +7,10 @@ panteras:
      ${CONSUL_UI_PORTS} 
      ${MARATHON_PORTS}
      ${MESOS_PORTS}
-     ${CHRONOS_PORTS}
   
   environment:
     CONSUL_IP:               "${CONSUL_IP}"
     HOST_IP:                 "${HOST_IP}"
-    LISTEN_IP:               "${LISTEN_IP}"
     FQDN:                    "${FQDN}"
     GOMAXPROCS:              "${GOMAXPROCS}"
 
@@ -28,10 +26,6 @@ panteras:
     SERVICE_5050_TAGS: haproxy
     SERVICE_5050_CHECK_HTTP: /master/health
 
-    SERVICE_4400_NAME: chronos
-    SERVICE_4400_TAGS: haproxy
-    SERVICE_4400_CHECK_HTTP: /ping
-
     START_CONSUL:            "${START_CONSUL}"
     START_CONSUL_TEMPLATE:   "${START_CONSUL_TEMPLATE}"
     START_DNSMASQ:           "${START_DNSMASQ}"
@@ -40,7 +34,6 @@ panteras:
     START_MESOS_SLAVE:       "${START_MESOS_SLAVE}"
     START_REGISTRATOR:       "${START_REGISTRATOR}"
     START_ZOOKEEPER:         "${START_ZOOKEEPER}"
-    START_CHRONOS:           "${START_CHRONOS}"
 
     CONSUL_APP_PARAMS:          "${CONSUL_APP_PARAMS}"
     CONSUL_DOMAIN:              "${CONSUL_DOMAIN}"
@@ -55,7 +48,6 @@ panteras:
     ZOOKEEPER_HOSTS:            "${ZOOKEEPER_HOSTS}"
     ZOOKEEPER_ID:               "${ZOOKEEPER_ID}"
     KEEPALIVED_VIP:             "${KEEPALIVED_VIP}"
-    CHRONOS_APP_PARAMS:         "${CHRONOS_APP_PARAMS}"
 
     HOSTNAME:                   "${PANTERAS_HOSTNAME}"
 
@@ -63,10 +55,10 @@ panteras:
     ./restricted/env
 
   volumes:
-    - "/etc/resolv.conf:/etc/resolv.conf.orig"
+    - "/etc/resolv.conf.orig:/etc/resolv.conf.orig"
     - "/var/spool/marathon/artifacts/store:/var/spool/store"
     - "/var/run/docker.sock:/tmp/docker.sock"
     - "/var/lib/docker:/var/lib/docker"
     - "/sys:/sys"
     - "/tmp/mesos:/tmp/mesos"
-    ${VOLUME_DOCKER}
+    - "/var/log/PanteraS:/var/log/PanteraS"

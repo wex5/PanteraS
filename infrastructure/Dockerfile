@@ -36,7 +36,7 @@ RUN pip install supervisor-stdout
 RUN pip install https://github.com/Supervisor/supervisor/archive/3.2-branch.zip
 
 # install Java 8
-RUN echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu trusty main" > /etc/apt/sources.list.d/java-trusty.list \
+RUN    echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu trusty main" > /etc/apt/sources.list.d/java-trusty.list \
     && gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv EEA14886 && gpg --export --armor EEA14886 | apt-key add - \
     && apt-get update \
     && echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections \
@@ -46,13 +46,13 @@ RUN echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu trusty main" > /e
     && echo "JAVA_HOME=/usr/lib/jvm/java-8-oracle" >> /etc/environment
 
 ENV DOCKER_APP_VERSION            1.9.1-0~trusty
-ENV CONSUL_APP_VERSION            0.6.0
+ENV CONSUL_APP_VERSION            0.5.2
 ENV CONSUL_TEMPLATE_APP_VERSION   0.10.0
+ENV ENVCONSUL_APP_VERSION         0.5.0
 ENV HAPROXY_APP_VERSION           1.5.4-1ubuntu2.1~ubuntu14.04.1 
 ENV MESOS_APP_VERSION             0.25.0-0.2.70.ubuntu1404
 ENV MARATHON_APP_VERSION          0.13.0-1.0.440.ubuntu1404
 ENV REGISTRATOR_APP_VERSION       v6
-ENV CHRONOS_APP_VERSION           2.4.0-0.1.20151007110204.ubuntu1404
 
 ENV DOCKER_HOST unix:///tmp/docker.sock
 
@@ -63,16 +63,18 @@ RUN mkdir /opt/consul && mkdir /etc/consul.d/
 ENV PATH $PATH:/opt/consul
 WORKDIR /opt/consul
 
-RUN wget https://releases.hashicorp.com/consul/${CONSUL_APP_VERSION}/consul_${CONSUL_APP_VERSION}_linux_amd64.zip \
-    && wget https://releases.hashicorp.com/consul/${CONSUL_APP_VERSION}/consul_${CONSUL_APP_VERSION}_web_ui.zip \
-    && unzip consul_${CONSUL_APP_VERSION}_linux_amd64.zip \
-    && unzip consul_${CONSUL_APP_VERSION}_web_ui.zip \
-    && rm consul_*.zip
+RUN wget https://dl.bintray.com/mitchellh/consul/${CONSUL_APP_VERSION}_linux_amd64.zip \
+    && wget https://dl.bintray.com/mitchellh/consul/${CONSUL_APP_VERSION}_web_ui.zip \
+    && wget https://github.com/hashicorp/envconsul/releases/download/v${ENVCONSUL_APP_VERSION}/envconsul_${ENVCONSUL_APP_VERSION}_linux_amd64.tar.gz \
+    && unzip ${CONSUL_APP_VERSION}_linux_amd64.zip \
+    && unzip ${CONSUL_APP_VERSION}_web_ui.zip \
+    && tar zxf envconsul_${ENVCONSUL_APP_VERSION}_linux_amd64.tar.gz \
+    && ln -s envconsul_${ENVCONSUL_APP_VERSION}_linux_amd64/envconsul .
+
 
 # DNSMASQ
 #
-RUN apt-get install -y dnsmasq dnsutils \
-    && apt-get clean
+RUN apt-get install -y dnsmasq dnsutils
 
 
 # HAPROXY
@@ -127,7 +129,6 @@ RUN apt-get update \
     && apt-get -y install \
       mesos=${MESOS_APP_VERSION} \
       marathon=${MARATHON_APP_VERSION} \
-      chronos=${CHRONOS_APP_VERSION} \
     && apt-get clean
 
 ADD zkStart.sh /opt/zkStart.sh
