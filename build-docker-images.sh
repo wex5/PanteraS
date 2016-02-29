@@ -9,7 +9,7 @@ error_exit() {
 }
 
 TAG=${TAG:-"latest"}
-IMAGE=${IMAGE:-"panteras/paas-in-a-box:${TAG}"}
+IMAGE=${IMAGE:-"justep/paas-in-a-box:${TAG}"}
 
 docker build --rm=true --tag=${REGISTRY}${IMAGE} infrastructure || error_exit
 docker tag             -f    ${REGISTRY}${IMAGE} ${IMAGE}       || error_exit
