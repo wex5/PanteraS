@@ -84,7 +84,7 @@ done
 cd /var
 
 if [ ! -d 'PanteraS' ]; then
-  git clone https://github.com/VFT/PanteraS.git 
+  git clone https://github.com/wex5/PanteraS.git 
   cd PanteraS
 else
   cd PanteraS
@@ -207,7 +207,7 @@ if [ "$SLAVE" == "true" ]; then
           echo '===================NFS Configuration================='
           echo 'Enter remote nfs dir like : 192.168.1.9:/store'
           echo '====================================================='
-          read -P 'NFS:' NFS
+          read -p 'NFS:' NFS
         fi
         yum install -y nfs-utils
         systemctl enable rpcbind.service
