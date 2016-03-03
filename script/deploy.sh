@@ -278,6 +278,9 @@ echo "LISTEN_IP=$IP" >> restricted/host
 # fi
 if [ "$SLAVE" == "true" ]; then
   if [ ! -f "/etc/resolv.conf.orig" ];then
+    if [ -d "/etc/resolv.conf.orig" ]; then
+      rm -rf /etc/resolv.conf.orig
+    fi
     cp /etc/resolv.conf /etc/resolv.conf.orig 
     echo "nameserver $IP" > /etc/resolv.conf
   fi
