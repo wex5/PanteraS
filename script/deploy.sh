@@ -1,10 +1,8 @@
 #!/bin/bash
 source deploy.conf
-# --------------------------------------------------------------------------------------
-# check your user id
-# --------------------------------------------------------------------------------------
-# this script need root user access on target node. if you have root user id, please
-# execute with 'sudo' command.
+
+WORK_DIR='/var/PanteraS'
+REGISTRY_DOMAIN='registry.super.com'
 
 if [ $UID -ne 0 ]; then
   echo 'Warning: this script was designed for root user.'
@@ -18,6 +16,11 @@ if [ $IP ]; then
 else
   echo "Error: can't get a valid IP from NIC:${NIC}"
   exit 1
+fi
+
+if [ -f '/etc/resolv.conf.orig' ];then
+  cp /etc/resolv.conf.orig /etc/resolv.conf
+  rm -f /etc/resolv.conf.orig
 fi
 
 yum update -y
@@ -53,11 +56,6 @@ if [ $REGISTRY_IP ] && [ $CA ]; then
   fi
 fi
 
-if [ -f '/etc/resolv.conf.orig' ];then
-  cp /etc/resolv.conf.orig /etc/resolv.conf
-  rm -f /etc/resolv.conf.orig
-fi
-
 docker ps
 if [ $? -ne 0 ]; then
   tee /etc/yum.repos.d/docker.repo <<-'EOF'
@@ -81,15 +79,13 @@ while [ ! -f "/usr/local/bin/docker-compose" ] || [ ! -s "/usr/local/bin/docker-
   chmod +x /usr/local/bin/docker-compose
 done
 
-cd /var
-
-if [ ! -d 'PanteraS' ]; then
-  git clone https://github.com/wex5/PanteraS.git 
-  cd PanteraS
-else
-  cd PanteraS
-  git pull
+if [ ! -d $WORK_DIR ]; then
+   mkdir $WORK_DIR
 fi
+cd $WORK_DIR
+wget -O docker-compose.yml.tpl https://raw.githubusercontent.com/VFT/PanteraS/master/docker-compose.yml.tpl
+wget -O generate_yml.sh https://raw.githubusercontent.com/VFT/PanteraS/master/generate_yml.sh
+chmod +x generate_yml.sh
 
 if [ ! -d 'restricted' ]; then
   mkdir restricted
@@ -269,13 +265,8 @@ echo "LISTEN_IP=$IP" >> restricted/host
   echo 'START_CONSUL_TEMPLATE="true"' >> restricted/host
   echo 'START_DNSMASQ="true"' >> restricted/host
 }
-[ $REGISTRY_IP ] && echo "REGISTRY=registry.super.com/" >> restricted/host
+[ $REGISTRY_IP ] && echo "REGISTRY=$REGISTRY_DOMAIN/" >> restricted/host
 
-
-# if [ "$EDGE" == "true" ]; then
-#   echo "START_DNSMASQ=true" >> restricted/host
-#   grep -q "127.0.0.1" /etc/resolv.conf || sed -i '1a nameserver 127.0.0.1' /etc/resolv.conf
-# fi
 if [ "$SLAVE" == "true" ]; then
   if [ ! -f "/etc/resolv.conf.orig" ];then
     if [ -d "/etc/resolv.conf.orig" ]; then
@@ -284,7 +275,6 @@ if [ "$SLAVE" == "true" ]; then
     cp /etc/resolv.conf /etc/resolv.conf.orig 
     echo "nameserver $IP" > /etc/resolv.conf
   fi
-  # grep -q "127.0.0.1" /etc/resolv.conf || sed -i '1a nameserver 127.0.0.1' /etc/resolv.conf
 fi
 ./generate_yml.sh
 docker-compose up -d
