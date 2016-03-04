@@ -30,6 +30,7 @@ sed -i 's/^SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
 setenforce 0
 systemctl stop firewalld.service
 systemctl disable firewalld.service
+yum install wget -y
 
 if [ $REGISTRY_IP ] && [ $CA ]; then
   if [ -f "$CA" ]; then
@@ -72,7 +73,6 @@ EOF
 else
   systemctl restart docker
 fi
-yum install wget git -y
 while [ ! -f "/usr/local/bin/docker-compose" ] || [ ! -s "/usr/local/bin/docker-compose" ]; do
   #wget -O /usr/local/bin/docker-compose https://github.com/docker/compose/releases/download/1.5.2/docker-compose-`uname -s`-`uname -m`
   wget -O /usr/local/bin/docker-compose https://raw.githubusercontent.com/VFT/imageStore/master/docker-compose
