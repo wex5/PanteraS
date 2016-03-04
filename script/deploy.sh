@@ -83,8 +83,8 @@ if [ ! -d $WORK_DIR ]; then
    mkdir $WORK_DIR
 fi
 cd $WORK_DIR
-wget -O docker-compose.yml.tpl https://raw.githubusercontent.com/VFT/PanteraS/master/docker-compose.yml.tpl
-wget -O generate_yml.sh https://raw.githubusercontent.com/VFT/PanteraS/master/generate_yml.sh
+wget -O docker-compose.yml.tpl https://raw.githubusercontent.com/wex5/PanteraS/master/docker-compose.yml.tpl
+wget -O generate_yml.sh https://raw.githubusercontent.com/wex5/PanteraS/master/generate_yml.sh
 chmod +x generate_yml.sh
 
 if [ ! -d 'restricted' ]; then
