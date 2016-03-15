@@ -4,10 +4,6 @@
 [ -f ./restricted/host ]      && . ./restricted/host
 [ -f ./restricted/overwrite ] && . ./restricted/overwrite
 
-echo "Keep in mind, to set free these ports on DOCKER HOST:"
-echo "53, 80, 81, 2181, 2888, 3888, 4400, 5050, 5151, 8080, 8300 - 8302, 8400, 8500, 8600, 9000, 31000 - 32000"
-echo "and be sure that your hostname is resolvable, if not, add entry to /etc/resolv.conf"
-
 MASTER=${MASTER:-"true"}
 SLAVE=${SLAVE:-"true"}
 EDGE=${EDGE:-"true"}
