@@ -143,6 +143,7 @@ CHRONOS_PARAMS="--master zk://${ZOOKEEPER_HOSTS}/mesos \
  --zk_hosts ${ZOOKEEPER_HOSTS} \
  --http_address ${LISTEN_IP} \
  --http_port 4400 \
+ --hostname ${HOSTNAME} \
  ${CHRONOS_PARAMS}"
 #
 FABIO_PARAMS="-cfg ./fabio.properties"
